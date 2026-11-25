@@ -33,7 +33,7 @@ h2{font-size:24px;line-height:1.1;margin:0 0 14px;font-weight:700;text-wrap:bala
 .lbl{font-size:14px;opacity:.85}
 .stats{display:flex;flex-wrap:wrap;gap:10px 28px}
 .stats b{display:block;font-weight:700;font-size:24px;white-space:nowrap}
-.pots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:28px}
+.pots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:28px}
 .pot{background:var(--bg);color:var(--ink);border-radius:14px;padding:16px 18px;cursor:pointer;border:0;text-align:left;font:inherit}
 .pot .num{font-size:26px;font-weight:700;white-space:nowrap}
 .pot .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
@@ -92,8 +92,13 @@ tfoot td{font-weight:700;border-bottom:0;font-size:17px}
 details summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
 footer{border-top:1px solid var(--line)}
 .msg{font-size:14px;margin-top:10px;min-height:20px}
-@media(max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}.goals{grid-template-columns:minmax(0,1fr)}}
-@media(max-width:600px){th,td{padding:8px 4px}.rng{display:none}.tag{display:none}.pots{grid-template-columns:minmax(0,1fr)}table{font-size:13px}.yrow{grid-template-columns:36px minmax(0,1fr) 88px}.hist li{grid-template-columns:72px minmax(0,1fr) auto auto;font-size:14px}}
+.ccnums{display:flex;gap:24px;flex-wrap:wrap;margin-top:6px}.ccnums small{display:block}.ccnums .num{font-size:22px;font-weight:700;white-space:nowrap}
+.cc .due{font-size:13px;color:var(--mute);white-space:nowrap}
+.news{border:2px solid var(--band);border-radius:16px;padding:16px 20px;background:var(--mist)}
+.news h3{margin:0 0 6px;font-size:18px}.news ul{margin:6px 0 12px;padding-left:20px}.news .ver{margin-top:12px}
+.linkbtn{background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit;min-height:32px}
+@media(max-width:900px){.pots{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:minmax(0,1fr)}.goals{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){th,td{padding:8px 4px}.rng{display:none}.tag{display:none}.pots{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pot{padding:12px 14px}.pot .num{font-size:21px}table{font-size:13px}.yrow{grid-template-columns:36px minmax(0,1fr) 88px}.hist li{grid-template-columns:72px minmax(0,1fr) auto auto;font-size:14px}}
 @media(prefers-reduced-motion:no-preference){.meter i,.bar i{transition:width .5s ease}}
 </style>
 </head>
@@ -107,6 +112,7 @@ footer{border-top:1px solid var(--line)}
 </div></header>
 
 <main>
+<section class="band" id="newsBand" hidden style="padding-bottom:0"><div class="wrap"><div class="news" id="news" role="status"></div></div></section>
 <section class="band"><div class="wrap grid2">
   <form class="card" id="dep">
     <h2>Log a payday deposit</h2>
@@ -127,6 +133,7 @@ footer{border-top:1px solid var(--line)}
   <div>
     <div class="nav"><button class="btn ghost sm" data-act="mprev" aria-label="Previous month">‹</button><h2 id="mTitle"></h2><button class="btn ghost sm" data-act="mnext" aria-label="Next month">›</button></div>
     <div class="scroll"><table id="mTable"></table></div>
+    <div class="scroll" id="mCardsW" style="margin-top:24px"><table id="mCards"></table></div>
   </div>
 </div></section>
 
@@ -152,13 +159,52 @@ footer{border-top:1px solid var(--line)}
   </details>
 </div></section>
 
-<section class="band" style="padding-top:0"><div class="wrap">
-  <div class="nav"><h2>History</h2><select id="hFilter" style="width:auto"><option value="">All pots</option><option value="personal">Personal</option><option value="travel">Travel</option><option value="gadget">Gadgets</option></select></div>
+<section class="band" id="cc" style="background:var(--card)"><div class="wrap">
+  <h2>Credit cards</h2>
+  <div class="stats" id="ccSum"></div>
+  <div class="grid2" style="margin-top:20px">
+    <form class="card" id="ccTx" style="background:var(--bg)">
+      <h3 style="margin:0 0 10px;font-size:18px">Log card activity</h3>
+      <div class="seg" role="radiogroup" aria-label="Card activity type">
+        <label><input type="radio" name="cct" value="pay" checked><span>Payment</span></label>
+        <label><input type="radio" name="cct" value="charge"><span>Purchase</span></label>
+      </div>
+      <label for="cCard">Card</label><select id="cCard" required></select>
+      <label for="cAmt">Amount (₱)</label><input id="cAmt" type="number" inputmode="decimal" min="0.01" step="0.01" required placeholder="e.g. 5000">
+      <div class="row">
+        <div><label for="cDate">Date</label><input id="cDate" type="date" required></div>
+        <div><label for="cCut">Cut-off</label><select id="cCut"><option value="15">15th</option><option value="30">30th</option></select></div>
+      </div>
+      <label for="cNote">Note (optional)</label><input id="cNote" placeholder="e.g. Nov statement, Shopee">
+      <div style="margin-top:16px"><button class="btn" type="submit">Save card activity</button></div>
+      <div class="msg" id="cMsg" role="status"></div>
+    </form>
+    <div>
+      <div id="ccList"></div>
+      <details class="card" style="background:var(--bg)"><summary><b>Add a credit card</b></summary>
+        <form id="ccForm">
+          <label for="ccName">Card name</label><input id="ccName" required placeholder="e.g. BPI Amore Visa">
+          <p class="note" style="margin:4px 0 0">Use a nickname only. Never type the card number.</p>
+          <div class="row">
+            <div><label for="ccLimit">Credit limit (₱)</label><input id="ccLimit" type="number" inputmode="decimal" min="0" step="0.01" required></div>
+            <div><label for="ccOpen">Balance to pay now (₱)</label><input id="ccOpen" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0"></div>
+          </div>
+          <label for="ccDue">Due date (day of month, optional)</label><input id="ccDue" type="number" inputmode="numeric" min="1" max="31" placeholder="e.g. 5">
+          <div style="margin-top:16px"><button class="btn" type="submit">Add card</button></div>
+        </form>
+      </details>
+    </div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <div class="nav"><h2>History</h2><select id="hFilter" style="width:auto"><option value="">Everything</option><option value="personal">Personal</option><option value="travel">Travel</option><option value="gadget">Gadgets</option><option value="cards">Credit cards</option></select></div>
   <ul class="hist" id="hist"></ul>
 </div></section>
 </main>
 
 <footer class="band"><div class="wrap">
+  <p class="note">Savings Passbook <b id="ver"></b> · <button class="linkbtn" type="button" data-act="whatsnew">What's new</button></p>
   <p class="note" id="sampleNote"></p>
   <p class="note" id="saveState">Your data is saved on this phone only. Download a backup now and then.</p>
   <details><summary>Backup and restore</summary>
@@ -192,9 +238,17 @@ footer{border-top:1px solid var(--line)}
 {"id":"e11","goal":"g1","amt":3500,"date":"2026-11-15","cut":"15","s":1},
 {"id":"e12","goal":"g3","amt":2500,"date":"2026-11-15","cut":"15","s":1},
 {"id":"e13","goal":"g5","amt":1500,"date":"2026-11-15","cut":"15","s":1},
-{"id":"e14","goal":"g2","amt":1000,"date":"2026-11-20","cut":"30","note":"Extra from side gig","s":1}]}</script>
+{"id":"e14","goal":"g2","amt":1000,"date":"2026-11-20","cut":"30","note":"Extra from side gig","s":1}],
+"cards":[{"id":"c1","name":"BPI Visa","limit":50000,"open":8200,"due":5,"s":1}],
+"cardTx":[
+{"id":"t1","card":"c1","type":"pay","amt":3000,"date":"2026-11-15","cut":"15","note":"Oct statement","s":1},
+{"id":"t2","card":"c1","type":"charge","amt":2450,"date":"2026-11-18","cut":"30","note":"Groceries","s":1}]}</script>
 <script data-own>
 {
+const APP_VERSION='1.1.0';
+const CHANGES=[
+ {v:'1.1.0',date:'2026-11-25',items:['Credit cards: see the balance to pay and the available credit for each card','Log card purchases and payments by payday cut-off','Card payments now show in the monthly table and history','Version number and this What\'s new note']},
+ {v:'1.0.0',date:'2026-11-25',items:['Personal, Travel and Gadget savings, tracked by 15th and 30th cut-off','Monthly table and year view','Editable goals with targets and progress','Works offline, with backup and restore']}];
 const $=s=>document.querySelector(s);
 const CATS={personal:{l:'Personal',sub:'Bank account',ph:'e.g. BPI Savings',c:'var(--p)'},travel:{l:'Travel',sub:'Country',ph:'e.g. Japan',c:'var(--t)'},gadget:{l:'Gadgets',sub:'Device model',ph:'e.g. iPhone 17 Pro',c:'var(--g)'}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -207,13 +261,21 @@ const mName=(ym,o)=>new Date(+ym.slice(0,4),+ym.slice(5,7)-1,1).toLocaleString('
 const shiftYM=(ym,k)=>{const d=new Date(+ym.slice(0,4),+ym.slice(5,7)-1+k,1);return `${d.getFullYear()}-${pad(d.getMonth()+1)}`};
 let S;try{S=JSON.parse($('#state').textContent)}catch(e){S={v:0,goals:[],entries:[]}}
 try{const L=JSON.parse(localStorage.getItem('svpb')||'null');if(L&&(L.v||0)>(S.v||0))S=L}catch(e){}
-let curYM=TODAY.slice(0,7),curY=+TODAY.slice(0,4),editId=null;
+S.cards=S.cards||[];S.cardTx=S.cardTx||[];
+let curYM=TODAY.slice(0,7),curY=+TODAY.slice(0,4),editId=null,editCard=null;
 const goal=id=>S.goals.find(g=>g.id===id);
 const sum=a=>a.reduce((t,e)=>t+e.amt,0);
 const byGoal=id=>sum(S.entries.filter(e=>e.goal===id));
 const byCat=c=>sum(S.entries.filter(e=>goal(e.goal)?.cat===c));
 const inMonth=(ym,cut)=>S.entries.filter(e=>e.date.slice(0,7)===ym&&(!cut||e.cut===cut));
 const uid=()=>Math.random().toString(36).slice(2,9);
+const card=id=>S.cards.find(c=>c.id===id);
+const ccOut=c=>(c.open||0)+S.cardTx.filter(t=>t.card===c.id).reduce((t,x)=>t+(x.type==='charge'?x.amt:-x.amt),0);
+const ccAvail=c=>(c.limit||0)-ccOut(c);
+const ccPaid=(ym,cut,id)=>sum(S.cardTx.filter(t=>t.type==='pay'&&t.date.slice(0,7)===ym&&(!cut||t.cut===cut)&&(!id||t.card===id)));
+function nextDue(day){if(!day)return null;const t=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const mk=(y,m)=>new Date(y,m,Math.min(day,new Date(y,m+1,0).getDate()));
+  let d=mk(t.getFullYear(),t.getMonth());if(d<t)d=mk(t.getFullYear(),t.getMonth()+1);return {d,days:Math.round((d-t)/864e5)}}
 
 function hero(){
   const tot=sum(S.entries),ym=TODAY.slice(0,7),cut=cutOf(TODAY);
@@ -226,7 +288,8 @@ function hero(){
   <div><span class="lbl">${mName(ym,{month:'long'})} so far</span><b>${peso(thisM)}</b></div>
   <div><span class="lbl">vs ${mName(shiftYM(ym,-1),{month:'long'})}</span><b>${diff>=0?'+':''}${peso(diff)}</b></div>`;
   $('#pots').innerHTML=Object.entries(CATS).map(([k,c])=>{const n=S.goals.filter(g=>g.cat===k).length;
-    return `<button class="pot" data-act="goto" data-cat="${k}"><span class="dot" style="background:${c.c}"></span>${c.l}<div class="num">${peso(byCat(k))}</div><small>${n} ${n===1?'pot':'pots'} · by ${c.sub.toLowerCase()}</small></button>`}).join('');
+    return `<button class="pot" data-act="goto" data-cat="${k}"><span class="dot" style="background:${c.c}"></span>${c.l}<div class="num">${peso(byCat(k))}</div><small>${n} ${n===1?'pot':'pots'} · by ${c.sub.toLowerCase()}</small></button>`}).join('')
+    +`<button class="pot" data-act="gotocc"><span class="dot" style="background:var(--ink)"></span>Credit cards<div class="num">${peso(Math.max(0,sum(S.cards.map(c=>({amt:ccOut(c)})))))}</div><small>to pay · ${peso(sum(S.cards.map(c=>({amt:ccAvail(c)}))))} available</small></button>`;
 }
 function goalOpts(){
   const sel=$('#dGoal'),v=sel.value;
@@ -249,6 +312,41 @@ function month(){
   $('#mTable').innerHTML=`<thead><tr><th>Pot</th><th>15th<span class="rng"> cut-off</span><br><small>1–15</small></th><th>30th<span class="rng"> cut-off</span><br><small>16–${ld}</small></th><th>Month</th></tr></thead><tbody>${rows.join('')||'<tr><td colspan="4" class="empty">No goals yet. Add one below.</td></tr>'}</tbody><tfoot><tr><td>Total saved</td><td>${peso(t15)}</td><td>${peso(t30)}</td><td>${peso(t15+t30)}</td></tr></tfoot>`;
 }
 const cell=n=>n?`<span class="${n<0?'neg':''}">${peso(n)}</span>`:'<span class="zero">–</span>';
+function monthCards(){
+  const w=$('#mCardsW');if(!S.cards.length){w.hidden=true;return}w.hidden=false;
+  let a15=0,a30=0;
+  const rows=S.cards.map(c=>{const a=ccPaid(curYM,'15',c.id),b=ccPaid(curYM,'30',c.id);a15+=a;a30+=b;return `<tr><td>${esc(c.name)}</td><td>${cell(a)}</td><td>${cell(b)}</td><td>${cell(a+b)}</td></tr>`}).join('');
+  $('#mCards').innerHTML=`<thead><tr><th>Card payments</th><th>15th</th><th>30th</th><th>Month</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td>Total paid</td><td>${peso(a15)}</td><td>${peso(a30)}</td><td>${peso(a15+a30)}</td></tr></tfoot>`;
+}
+function cards(){
+  const tOut=sum(S.cards.map(c=>({amt:ccOut(c)}))),tLim=sum(S.cards.map(c=>({amt:c.limit||0}))),ym=TODAY.slice(0,7);
+  $('#ccSum').innerHTML=S.cards.length?`<div><span class="lbl">Total to pay</span><b>${peso(Math.max(0,tOut))}</b></div><div><span class="lbl">Total available</span><b>${peso(tLim-tOut)}</b></div><div><span class="lbl">Total limit</span><b>${peso(tLim)}</b></div><div><span class="lbl">Paid in ${mName(ym,{month:'long'})}</span><b>${peso(ccPaid(ym))}</b></div>`:'';
+  $('#ccList').innerHTML=S.cards.map(c=>{
+    if(c.id===editCard)return ccEditForm(c);
+    const o=ccOut(c),av=ccAvail(c),u=c.limit?Math.min(100,Math.max(0,o/c.limit*100)):0,nd=nextDue(c.due);
+    const dueTxt=nd?(o>0?`Due ${nd.d.toLocaleDateString('en',{month:'short',day:'numeric'})} · ${nd.days===0?'today':nd.days===1?'tomorrow':'in '+nd.days+' days'}`:`Due every ${c.due}${['th','st','nd','rd'][(c.due%10<4&&Math.floor(c.due/10)!==1)?c.due%10:0]}`):'';
+    return `<div class="goal cc"><div class="gh"><b>${esc(c.name)}</b><span class="due">${dueTxt}</span></div>
+    <div class="ccnums"><div><small>${o<0?'Overpaid':'To pay'}</small><span class="num ${o>0?'neg':''}">${peso(Math.abs(o))}</span></div><div><small>Available</small><span class="num">${peso(av)}</span></div></div>
+    ${c.limit?`<div class="meter"><i style="width:${u}%;background:var(--g)"></i></div><small>${Math.round(u)}% of ${peso(c.limit)} limit used</small>`:'<small>No limit set</small>'}
+    <div style="display:flex;justify-content:flex-end;gap:4px"><button class="x" data-act="editcard" data-id="${c.id}">Edit</button><button class="x" data-act="delcard" data-id="${c.id}">Remove card</button></div></div>`}).join('')||'<p class="empty">No credit cards yet. Add one below.</p>';
+  const sel=$('#cCard'),v=sel.value;
+  sel.innerHTML=S.cards.length?S.cards.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join(''):'<option value="">Add a card first</option>';
+  if(v&&card(v))sel.value=v;
+}
+function ccEditForm(c){
+  return `<form class="goal ccedit" data-id="${c.id}"><b>Edit card</b>
+    <label for="xN-${c.id}">Card name</label><input id="xN-${c.id}" name="name" required value="${esc(c.name)}">
+    <div class="row"><div><label for="xL-${c.id}">Credit limit (₱)</label><input id="xL-${c.id}" name="limit" type="number" inputmode="decimal" min="0" step="0.01" value="${c.limit||''}"></div>
+    <div><label for="xD-${c.id}">Due day</label><input id="xD-${c.id}" name="due" type="number" min="1" max="31" value="${c.due||''}"></div></div>
+    <label for="xO-${c.id}">Balance to pay (₱)</label><input id="xO-${c.id}" name="bal" type="number" inputmode="decimal" step="0.01" value="${Math.round(ccOut(c)*100)/100}">
+    <p class="note" style="margin:4px 0 0">Change this to match your latest statement.</p>
+    <div class="row" style="margin-top:14px"><button class="btn sm" type="submit">Save</button><button class="btn ghost sm" type="button" data-act="cancelcard">Cancel</button></div></form>`;
+}
+function news(all){
+  const list=all?CHANGES:CHANGES.slice(0,1);
+  $('#news').innerHTML=list.map((c,i)=>`<div class="${i?'ver':''}"><h3>${i?'':'What\'s new in '}v${c.v}<span class="note" style="font-weight:400"> · ${new Date(c.date+'T00:00').toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'})}</span></h3><ul>${c.items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')+`<button class="btn sm" type="button" data-act="gotit">Got it</button>`;
+  $('#newsBand').hidden=false;
+}
 function year(){
   $('#yTitle').textContent=curY+' by payday cut-off';
   const ms=[...Array(12)].map((_,i)=>{const ym=`${curY}-${pad(i+1)}`;return {ym,a:sum(inMonth(ym,'15')),b:sum(inMonth(ym,'30'))}});
@@ -274,12 +372,17 @@ function goals(){
 }
 function history(){
   const f=$('#hFilter').value;
-  const es=S.entries.filter(e=>!f||goal(e.goal)?.cat===f).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)).slice(0,60);
-  $('#hist').innerHTML=es.map(e=>{const g=goal(e.goal);return `<li><span class="note">${new Date(e.date+'T00:00').toLocaleDateString('en',{month:'short',day:'numeric',year:'2-digit'})}<small>${e.cut}th cut-off</small></span><span>${esc(g?g.name:'Removed pot')}<small>${g?CATS[g.cat].l:''}${e.note?' · '+esc(e.note):''}</small></span><span class="num ${e.amt<0?'neg':''}">${peso(e.amt)}</span><button class="x" data-act="delent" data-id="${e.id}" aria-label="Delete entry">✕</button></li>`}).join('')||'<li class="empty" style="display:block">Nothing logged yet.</li>';
+  const sv=f==='cards'?[]:S.entries.filter(e=>!f||goal(e.goal)?.cat===f).map(e=>({...e,k:'s'}));
+  const cc=f&&f!=='cards'?[]:S.cardTx.map(t=>({...t,k:'c'}));
+  const es=[...sv,...cc].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)).slice(0,80);
+  const dt=e=>`<span class="note">${new Date(e.date+'T00:00').toLocaleDateString('en',{month:'short',day:'numeric',year:'2-digit'})}<small>${e.cut}th cut-off</small></span>`;
+  $('#hist').innerHTML=es.map(e=>{
+    if(e.k==='c'){const c=card(e.card);return `<li>${dt(e)}<span>${esc(c?c.name:'Removed card')}<small>Credit card · ${e.type==='pay'?'Payment':'Purchase'}${e.note?' · '+esc(e.note):''}</small></span><span class="num ${e.type==='charge'?'neg':''}">${e.type==='charge'?'+':'−'}${peso(e.amt)}</span><button class="x" data-act="delcc" data-id="${e.id}" aria-label="Delete entry">✕</button></li>`}
+    const g=goal(e.goal);return `<li>${dt(e)}<span>${esc(g?g.name:'Removed pot')}<small>${g?CATS[g.cat].l:''}${e.note?' · '+esc(e.note):''}</small></span><span class="num ${e.amt<0?'neg':''}">${peso(e.amt)}</span><button class="x" data-act="delent" data-id="${e.id}" aria-label="Delete entry">✕</button></li>`}).join('')||'<li class="empty" style="display:block">Nothing logged yet.</li>';
 }
 function all(){
-  hero();goalOpts();month();year();goals();history();
-  const hasS=S.goals.some(g=>g.s)||S.entries.some(e=>e.s);
+  hero();goalOpts();month();monthCards();year();goals();cards();history();
+  const hasS=S.goals.some(g=>g.s)||S.entries.some(e=>e.s)||S.cards.some(c=>c.s);
   $('#sampleNote').innerHTML=hasS?'The pots and deposits marked as samples are example data. <button class="btn ghost sm" data-act="clearSample">Clear sample data</button>':'';
 }
 function save(){
@@ -289,7 +392,7 @@ function save(){
 }
 function restore(txt){
   const n=JSON.parse(txt);if(!Array.isArray(n.goals)||!Array.isArray(n.entries))throw 0;
-  n.v=Math.max(n.v||0,S.v||0);S=n;save();
+  n.cards=n.cards||[];n.cardTx=n.cardTx||[];n.v=Math.max(n.v||0,S.v||0);S=n;save();
 }
 const showMsg=(id,t)=>{$(id).textContent=t;setTimeout(()=>{if($(id).textContent===t)$(id).textContent=''},3500)};
 
@@ -313,6 +416,29 @@ $('#gForm').addEventListener('submit',e=>{e.preventDefault();
   S.goals.push(g);$('#gName').value='';$('#gTarget').value='';save();
 });
 $('#hFilter').addEventListener('change',history);
+$('#cDate').value=TODAY;$('#cCut').value=cutOf(TODAY);
+$('#cDate').addEventListener('change',e=>{if(e.target.value)$('#cCut').value=cutOf(e.target.value)});
+$('#ccTx').addEventListener('submit',e=>{e.preventDefault();
+  const id=$('#cCard').value,a=parseFloat($('#cAmt').value),type=document.querySelector('[name=cct]:checked').value;
+  if(!id||!(a>0))return showMsg('#cMsg','Pick a card and enter an amount.');
+  const d=$('#cDate').value||TODAY;
+  S.cardTx.push({id:'t'+uid(),card:id,type,amt:Math.round(a*100)/100,date:d,cut:$('#cCut').value,note:$('#cNote').value.trim()||undefined});
+  $('#cAmt').value='';$('#cNote').value='';save();
+  const c=card(id);showMsg('#cMsg',`${type==='pay'?'Paid':'Added purchase of'} ${peso(a)} · ${c.name}. To pay now: ${peso(Math.max(0,ccOut(c)))}`);
+});
+$('#ccForm').addEventListener('submit',e=>{e.preventDefault();
+  const n=$('#ccName').value.trim();if(!n)return;
+  const due=parseInt($('#ccDue').value);
+  S.cards.push({id:'c'+uid(),name:n,limit:parseFloat($('#ccLimit').value)||0,open:parseFloat($('#ccOpen').value)||0,due:due>=1&&due<=31?due:undefined});
+  e.target.reset();save();
+});
+$('#ccList').addEventListener('submit',e=>{e.preventDefault();const f=e.target,c=card(f.dataset.id);if(!c)return;
+  const E=f.elements,n=E['name'].value.trim();if(!n)return;
+  c.name=n;c.limit=parseFloat(E['limit'].value)||0;
+  const due=parseInt(E['due'].value);c.due=due>=1&&due<=31?due:undefined;
+  const bal=parseFloat(E['bal'].value);if(!isNaN(bal))c.open=(c.open||0)+(bal-ccOut(c));
+  delete c.s;editCard=null;save();
+});
 $('#goals').addEventListener('change',e=>{if(e.target.name==='cat'){const f=e.target.closest('form');f.querySelector('.ekind').hidden=e.target.value!=='gadget'}});
 $('#goals').addEventListener('submit',e=>{e.preventDefault();const f=e.target,g=goal(f.dataset.id);if(!g)return;
   const E=f.elements,n=E['name'].value.trim();if(!n)return;
@@ -329,19 +455,32 @@ document.addEventListener('click',async e=>{
   else if(a==='goto'){$('#col-'+b.dataset.cat).scrollIntoView({behavior:'smooth',block:'start'})}
   else if(a==='editgoal'){editId=b.dataset.id;goals();const f=document.querySelector('.gedit input');f&&f.focus()}
   else if(a==='canceledit'){editId=null;goals()}
+  else if(a==='gotocc'){$('#cc').scrollIntoView({behavior:'smooth',block:'start'})}
+  else if(a==='editcard'){editCard=b.dataset.id;cards();const f=document.querySelector('.ccedit input');f&&f.focus()}
+  else if(a==='cancelcard'){editCard=null;cards()}
+  else if(a==='whatsnew'){news(true);$('#newsBand').scrollIntoView({behavior:'smooth',block:'start'})}
+  else if(a==='gotit'){$('#newsBand').hidden=true;try{localStorage.setItem('svpb_seen',APP_VERSION)}catch(err){}}
+  else if(a==='delcc'||a==='delcard'){
+    if(!b.hasAttribute('data-arm')){b.setAttribute('data-arm','');const t=b.textContent;b.textContent=a==='delcard'?'Tap again — removes its activity too':'Delete?';setTimeout(()=>{b.removeAttribute('data-arm');b.textContent=t},3000);return}
+    if(a==='delcc')S.cardTx=S.cardTx.filter(x=>x.id!==b.dataset.id);
+    else{S.cards=S.cards.filter(x=>x.id!==b.dataset.id);S.cardTx=S.cardTx.filter(x=>x.card!==b.dataset.id)}
+    save();
+  }
   else if(a==='delent'||a==='delgoal'){
     if(!b.hasAttribute('data-arm')){b.setAttribute('data-arm','');b.textContent=a==='delgoal'?'Tap again — removes its entries too':'Delete?';setTimeout(()=>{b.removeAttribute('data-arm');b.textContent=a==='delgoal'?'Remove goal':'✕'},3000);return}
     if(a==='delent')S.entries=S.entries.filter(x=>x.id!==b.dataset.id);
     else{S.goals=S.goals.filter(x=>x.id!==b.dataset.id);S.entries=S.entries.filter(x=>x.goal!==b.dataset.id)}
     save();
   }
-  else if(a==='clearSample'){S.goals=S.goals.filter(g=>!g.s);S.entries=S.entries.filter(x=>!x.s&&goal(x.goal));save()}
+  else if(a==='clearSample'){S.goals=S.goals.filter(g=>!g.s);S.entries=S.entries.filter(x=>!x.s&&goal(x.goal));S.cards=S.cards.filter(c=>!c.s);S.cardTx=S.cardTx.filter(x=>!x.s&&card(x.card));save()}
   else if(a==='copy'){try{await navigator.clipboard.writeText(JSON.stringify(S));showMsg('#bMsg','Backup copied.')}catch(err){$('#imp').value=JSON.stringify(S);showMsg('#bMsg','Copy blocked — the backup is in the box above; select and copy it.')}}
   else if(a==='import'){try{restore($('#imp').value);$('#imp').value='';showMsg('#bMsg','Backup restored.')}catch(err){showMsg('#bMsg','That does not look like a passbook backup.')}}
   else if(a==='download'){const u=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));const l=document.createElement('a');l.href=u;l.download=`savings-backup-${TODAY}.json`;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);showMsg('#bMsg','Backup saved to your Downloads.')}
 });
 $('#impFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{restore(await f.text());showMsg('#bMsg','Backup restored.')}catch(err){showMsg('#bMsg','That file is not a passbook backup.')}e.target.value=''});
 all();
+$('#ver').textContent='v'+APP_VERSION;
+try{if(localStorage.getItem('svpb_seen')!==APP_VERSION)news(false)}catch(e){}
 try{if(!localStorage.getItem('svpb'))localStorage.setItem('svpb',JSON.stringify(S))}catch(e){}
 try{navigator.storage?.persist?.()}catch(e){}
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));

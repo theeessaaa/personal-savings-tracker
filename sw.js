@@ -1,5 +1,6 @@
-// Offline cache for Savings Passbook. Bump VERSION when you change any file.
-const VERSION = 'savings-v2';
+// Offline cache for Savings Passbook.
+// Keep VERSION in sync with APP_VERSION in index.html; change it on every release.
+const VERSION = 'savings-v1.1.0';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

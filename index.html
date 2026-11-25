@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Savings Passbook</title>
+<meta name="theme-color" content="#00a862">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style data-own>
+/* VOICE: calm money tool, newspaper-graphics clarity
+   IDEA: a bank passbook, every payday cut-off is a stamped line
+   PICTURE: the month ledger (15th / 30th columns) and the year of cut-off bars
+   COLOUR and TYPE: white, ink, signal green band; Space Grotesk + Inter
+   LAYOUT: green band with total + 3 pots, then log/ledger side by side, year, goals, history */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0a110d);--ink:light-dark(#0b0b10,#e8f1ec);--mute:light-dark(#5b6360,#9aa8a1);
+--line:light-dark(#e3e8e5,#1f2b25);--card:light-dark(#f6faf8,#111a15);
+--band:light-dark(#00a862,#0b3d28);--bandInk:light-dark(#03170d,#e6f7ee);--mist:light-dark(#eafaf2,#10261b);
+--p:light-dark(#0a7d4f,#3ddc97);--t:light-dark(#2459d6,#7aa7ff);--g:light-dark(#e0533d,#ff8a78);--neg:light-dark(#c2342a,#ff8a78)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Roboto,"Segoe UI",sans-serif;overflow-x:clip}
+h1,h2,h3,.num{font-family:system-ui,-apple-system,Roboto,sans-serif;font-variant-numeric:tabular-nums}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.05;margin:0;font-weight:700}
+h2{font-size:24px;line-height:1.1;margin:0 0 14px;font-weight:700;text-wrap:balance}
+.band{padding:clamp(28px,4vw,56px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+.hero{background:var(--band);color:var(--bandInk)}
+.hero .top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px;align-items:flex-end}
+.big{font-size:clamp(44px,9vw,84px);line-height:1;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
+.lbl{font-size:14px;opacity:.85}
+.stats{display:flex;flex-wrap:wrap;gap:10px 28px}
+.stats b{display:block;font-weight:700;font-size:24px;white-space:nowrap}
+.pots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:28px}
+.pot{background:var(--bg);color:var(--ink);border-radius:14px;padding:16px 18px;cursor:pointer;border:0;text-align:left;font:inherit}
+.pot .num{font-size:26px;font-weight:700;white-space:nowrap}
+.pot .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.pot small{color:var(--mute);display:block}
+.grid2{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:clamp(20px,3vw,40px);align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+label{display:block;font-size:14px;color:var(--mute);margin:12px 0 4px}
+input,select,textarea,button{font:inherit;font-size:16px}
+input,select,textarea{width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+:focus-visible{outline:3px solid var(--t);outline-offset:2px}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.btn{min-height:44px;padding:8px 18px;border-radius:10px;border:0;background:var(--ink);color:var(--bg);font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{min-height:36px;padding:4px 12px;font-size:14px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg label{flex:1;margin:0;text-align:center;min-height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink)}
+.seg input{position:absolute;opacity:0;width:1px;min-height:0}
+.seg input:checked+span{font-weight:600}
+.seg label:has(input:checked){background:var(--mist)}
+.nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.nav h2{margin:0;flex:1}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+th{font-weight:500;color:var(--mute);font-size:13px}
+tr.cat td{font-weight:600;padding-top:16px;border-bottom:2px solid var(--line)}
+tfoot td{font-weight:700;border-bottom:0;font-size:17px}
+.tag{font-size:12px;color:var(--mute);border:1px solid var(--line);border-radius:6px;padding:1px 6px;margin-left:6px}
+.zero{color:var(--mute)}.neg{color:var(--neg)}
+.yr{display:grid;gap:6px}
+.yrow{display:grid;grid-template-columns:44px minmax(0,1fr) 110px;gap:10px;align-items:center;border:0;background:none;color:inherit;padding:4px 6px;border-radius:8px;cursor:pointer;text-align:left;font:inherit;min-height:40px}
+.yrow:hover,.yrow.on{background:var(--mist)}
+.bar{display:flex;height:22px;border-radius:5px;overflow:hidden;background:var(--line)}
+.bar i{display:block;height:100%}
+.b15{background:var(--p)}.b30{background:var(--t)}
+.yrow .num{text-align:right;white-space:nowrap;font-weight:600}
+.key{display:flex;gap:16px;font-size:14px;color:var(--mute);margin-bottom:10px}
+.key i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.goals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.gcol h3{font-size:18px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.goal{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;background:var(--bg)}
+.goal .gh{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.goal .gh b{font-size:16px}
+.meter{height:10px;border-radius:5px;background:var(--line);overflow:hidden;margin:8px 0 6px}
+.meter i{display:block;height:100%}
+.gedit label{margin-top:8px}.goal small{color:var(--mute);font-size:13px}
+.empty{color:var(--mute);font-size:14px;padding:10px 0}
+.hist li{display:grid;grid-template-columns:96px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.hist{list-style:none;margin:0;padding:0}
+.hist .num{font-weight:600;white-space:nowrap}
+.hist small{color:var(--mute);display:block;font-size:13px}
+.x{border:0;background:none;color:var(--mute);cursor:pointer;min-height:44px;min-width:44px;font-size:14px}
+.x[data-arm]{color:var(--neg);font-weight:600}
+.note{font-size:14px;color:var(--mute)}
+.scroll{overflow-x:auto}
+details summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+footer{border-top:1px solid var(--line)}
+.msg{font-size:14px;margin-top:10px;min-height:20px}
+@media(max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}.goals{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){th,td{padding:8px 4px}.rng{display:none}.tag{display:none}.pots{grid-template-columns:minmax(0,1fr)}table{font-size:13px}.yrow{grid-template-columns:36px minmax(0,1fr) 88px}.hist li{grid-template-columns:72px minmax(0,1fr) auto auto;font-size:14px}}
+@media(prefers-reduced-motion:no-preference){.meter i,.bar i{transition:width .5s ease}}
+</style>
+</head>
+<body>
+<header class="band hero"><div class="wrap">
+  <div class="top">
+    <div><h1>Savings passbook</h1><div class="lbl" id="asof"></div><div class="big num" id="total">₱0</div><div class="lbl">saved across all pots</div></div>
+    <div class="stats" id="stats"></div>
+  </div>
+  <div class="pots" id="pots"></div>
+</div></header>
+
+<main>
+<section class="band"><div class="wrap grid2">
+  <form class="card" id="dep">
+    <h2>Log a payday deposit</h2>
+    <div class="seg" role="radiogroup" aria-label="Type">
+      <label><input type="radio" name="typ" value="1" checked><span>Deposit</span></label>
+      <label><input type="radio" name="typ" value="-1"><span>Withdrawal</span></label>
+    </div>
+    <label for="dGoal">Pot</label><select id="dGoal" required></select>
+    <label for="dAmt">Amount (₱)</label><input id="dAmt" type="number" inputmode="decimal" min="0.01" step="0.01" required placeholder="e.g. 3000">
+    <div class="row">
+      <div><label for="dDate">Date</label><input id="dDate" type="date" required></div>
+      <div><label for="dCut">Cut-off</label><select id="dCut"><option value="15">15th</option><option value="30">30th</option></select></div>
+    </div>
+    <label for="dNote">Note (optional)</label><input id="dNote" placeholder="e.g. 13th month bonus">
+    <div style="margin-top:16px"><button class="btn" type="submit">Add to passbook</button></div>
+    <div class="msg" id="dMsg" role="status"></div>
+  </form>
+  <div>
+    <div class="nav"><button class="btn ghost sm" data-act="mprev" aria-label="Previous month">‹</button><h2 id="mTitle"></h2><button class="btn ghost sm" data-act="mnext" aria-label="Next month">›</button></div>
+    <div class="scroll"><table id="mTable"></table></div>
+  </div>
+</div></section>
+
+<section class="band" style="background:var(--card)"><div class="wrap">
+  <div class="nav"><button class="btn ghost sm" data-act="yprev" aria-label="Previous year">‹</button><h2 id="yTitle"></h2><button class="btn ghost sm" data-act="ynext" aria-label="Next year">›</button></div>
+  <div class="key"><span><i class="b15"></i>15th cut-off</span><span><i class="b30"></i>30th cut-off</span><span>Tap a month to open it</span></div>
+  <div class="yr" id="year"></div>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <h2>Goals</h2>
+  <div class="goals" id="goals"></div>
+  <details class="card" style="margin-top:8px"><summary><b>Add a goal</b></summary>
+    <form id="gForm">
+      <div class="row">
+        <div><label for="gCat">Category</label><select id="gCat"><option value="personal">Personal (bank account)</option><option value="travel">Travel (country)</option><option value="gadget">Gadget (device)</option></select></div>
+        <div id="gKindW" hidden><label for="gKind">Device</label><select id="gKind"><option>Phone</option><option>iPad</option><option>MacBook</option></select></div>
+      </div>
+      <label for="gName" id="gNameL">Bank account</label><input id="gName" required>
+      <label for="gTarget">Target (₱, optional)</label><input id="gTarget" type="number" inputmode="decimal" min="0" step="0.01">
+      <div style="margin-top:16px"><button class="btn" type="submit">Add goal</button></div>
+    </form>
+  </details>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap">
+  <div class="nav"><h2>History</h2><select id="hFilter" style="width:auto"><option value="">All pots</option><option value="personal">Personal</option><option value="travel">Travel</option><option value="gadget">Gadgets</option></select></div>
+  <ul class="hist" id="hist"></ul>
+</div></section>
+</main>
+
+<footer class="band"><div class="wrap">
+  <p class="note" id="sampleNote"></p>
+  <p class="note" id="saveState">Your data is saved on this phone only. Download a backup now and then.</p>
+  <details><summary>Backup and restore</summary>
+    <div class="row" style="margin:8px 0;flex-wrap:wrap"><button class="btn ghost sm" data-act="download" type="button" style="flex:none">Download backup file</button><button class="btn ghost sm" data-act="copy" type="button" style="flex:none">Copy backup</button></div>
+    <label for="impFile">Restore from a backup file</label><input id="impFile" type="file" accept=".json,application/json">
+    <label for="imp">Or paste a backup</label><textarea id="imp" rows="3" placeholder="Paste a backup here"></textarea>
+    <div style="margin-top:8px"><button class="btn ghost sm" data-act="import" type="button">Restore from pasted backup</button></div>
+    <div class="msg" id="bMsg" role="status"></div>
+  </details>
+</div></footer>
+
+<script type="application/json" id="state" data-own>{"v":1,"goals":[
+{"id":"g1","cat":"personal","name":"BPI Savings","target":100000,"s":1},
+{"id":"g2","cat":"personal","name":"GoTyme","target":30000,"s":1},
+{"id":"g3","cat":"travel","name":"Japan","target":80000,"s":1},
+{"id":"g4","cat":"travel","name":"South Korea","target":50000,"s":1},
+{"id":"g5","cat":"gadget","kind":"Phone","name":"iPhone 17 Pro","target":75000,"s":1},
+{"id":"g6","cat":"gadget","kind":"MacBook","name":"MacBook Air","target":70000,"s":1},
+{"id":"g7","cat":"gadget","kind":"iPad","name":"iPad Air","target":40000,"s":1}],
+"entries":[
+{"id":"e1","goal":"g1","amt":3000,"date":"2026-09-15","cut":"15","s":1},
+{"id":"e2","goal":"g3","amt":2000,"date":"2026-09-15","cut":"15","s":1},
+{"id":"e3","goal":"g5","amt":1500,"date":"2026-09-30","cut":"30","s":1},
+{"id":"e4","goal":"g1","amt":3000,"date":"2026-09-30","cut":"30","s":1},
+{"id":"e5","goal":"g3","amt":2000,"date":"2026-10-15","cut":"15","s":1},
+{"id":"e6","goal":"g1","amt":3000,"date":"2026-10-15","cut":"15","s":1},
+{"id":"e7","goal":"g5","amt":1500,"date":"2026-10-15","cut":"15","s":1},
+{"id":"e8","goal":"g1","amt":3000,"date":"2026-10-30","cut":"30","s":1},
+{"id":"e9","goal":"g4","amt":1000,"date":"2026-10-30","cut":"30","s":1},
+{"id":"e10","goal":"g6","amt":1000,"date":"2026-10-30","cut":"30","s":1},
+{"id":"e11","goal":"g1","amt":3500,"date":"2026-11-15","cut":"15","s":1},
+{"id":"e12","goal":"g3","amt":2500,"date":"2026-11-15","cut":"15","s":1},
+{"id":"e13","goal":"g5","amt":1500,"date":"2026-11-15","cut":"15","s":1},
+{"id":"e14","goal":"g2","amt":1000,"date":"2026-11-20","cut":"30","note":"Extra from side gig","s":1}]}</script>
+<script data-own>
+{
+const $=s=>document.querySelector(s);
+const CATS={personal:{l:'Personal',sub:'Bank account',ph:'e.g. BPI Savings',c:'var(--p)'},travel:{l:'Travel',sub:'Country',ph:'e.g. Japan',c:'var(--t)'},gadget:{l:'Gadgets',sub:'Device model',ph:'e.g. iPhone 17 Pro',c:'var(--g)'}};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const peso=n=>(n<0?'−':'')+'₱'+Math.abs(n).toLocaleString('en-PH',{maximumFractionDigits:2});
+const pad=n=>String(n).padStart(2,'0');
+const now=new Date();const TODAY=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+const cutOf=d=>+d.slice(8,10)<=15?'15':'30';
+const lastDay=ym=>new Date(+ym.slice(0,4),+ym.slice(5,7),0).getDate();
+const mName=(ym,o)=>new Date(+ym.slice(0,4),+ym.slice(5,7)-1,1).toLocaleString('en',o||{month:'long',year:'numeric'});
+const shiftYM=(ym,k)=>{const d=new Date(+ym.slice(0,4),+ym.slice(5,7)-1+k,1);return `${d.getFullYear()}-${pad(d.getMonth()+1)}`};
+let S;try{S=JSON.parse($('#state').textContent)}catch(e){S={v:0,goals:[],entries:[]}}
+try{const L=JSON.parse(localStorage.getItem('svpb')||'null');if(L&&(L.v||0)>(S.v||0))S=L}catch(e){}
+let curYM=TODAY.slice(0,7),curY=+TODAY.slice(0,4),editId=null;
+const goal=id=>S.goals.find(g=>g.id===id);
+const sum=a=>a.reduce((t,e)=>t+e.amt,0);
+const byGoal=id=>sum(S.entries.filter(e=>e.goal===id));
+const byCat=c=>sum(S.entries.filter(e=>goal(e.goal)?.cat===c));
+const inMonth=(ym,cut)=>S.entries.filter(e=>e.date.slice(0,7)===ym&&(!cut||e.cut===cut));
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+function hero(){
+  const tot=sum(S.entries),ym=TODAY.slice(0,7),cut=cutOf(TODAY);
+  const thisCut=sum(inMonth(ym,cut)),thisM=sum(inMonth(ym)),lastM=sum(inMonth(shiftYM(ym,-1)));
+  const diff=thisM-lastM;
+  $('#total').textContent=peso(tot);
+  $('#asof').textContent='As of '+now.toLocaleDateString('en',{month:'long',day:'numeric',year:'numeric'});
+  const range=cut==='15'?'1–15':'16–'+lastDay(ym);
+  $('#stats').innerHTML=`<div><span class="lbl">This cut-off (${mName(ym,{month:'short'})} ${range})</span><b>${peso(thisCut)}</b></div>
+  <div><span class="lbl">${mName(ym,{month:'long'})} so far</span><b>${peso(thisM)}</b></div>
+  <div><span class="lbl">vs ${mName(shiftYM(ym,-1),{month:'long'})}</span><b>${diff>=0?'+':''}${peso(diff)}</b></div>`;
+  $('#pots').innerHTML=Object.entries(CATS).map(([k,c])=>{const n=S.goals.filter(g=>g.cat===k).length;
+    return `<button class="pot" data-act="goto" data-cat="${k}"><span class="dot" style="background:${c.c}"></span>${c.l}<div class="num">${peso(byCat(k))}</div><small>${n} ${n===1?'pot':'pots'} · by ${c.sub.toLowerCase()}</small></button>`}).join('');
+}
+function goalOpts(){
+  const sel=$('#dGoal'),v=sel.value;
+  sel.innerHTML=S.goals.length?Object.entries(CATS).map(([k,c])=>{const gs=S.goals.filter(g=>g.cat===k);
+    return gs.length?`<optgroup label="${c.l}">${gs.map(g=>`<option value="${g.id}">${esc(g.name)}${g.kind?' ('+g.kind+')':''}</option>`).join('')}</optgroup>`:''}).join(''):'<option value="">Add a goal first</option>';
+  if(v&&goal(v))sel.value=v;
+}
+function month(){
+  $('#mTitle').textContent=mName(curYM);
+  const rows=[];let t15=0,t30=0;
+  for(const [k,c] of Object.entries(CATS)){
+    const gs=S.goals.filter(g=>g.cat===k);if(!gs.length)continue;
+    const lines=gs.map(g=>{const es=inMonth(curYM).filter(e=>e.goal===g.id);const a=sum(es.filter(e=>e.cut==='15')),b=sum(es.filter(e=>e.cut==='30'));
+      return {g,a,b}});
+    const ca=sum(lines.map(l=>({amt:l.a}))),cb=sum(lines.map(l=>({amt:l.b})));t15+=ca;t30+=cb;
+    rows.push(`<tr class="cat"><td><span class="dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c.c};margin-right:6px"></span>${c.l}</td><td>${cell(ca)}</td><td>${cell(cb)}</td><td>${cell(ca+cb)}</td></tr>`);
+    rows.push(...lines.map(l=>`<tr><td>${esc(l.g.name)}${l.g.kind?`<span class="tag">${l.g.kind}</span>`:''}</td><td>${cell(l.a)}</td><td>${cell(l.b)}</td><td>${cell(l.a+l.b)}</td></tr>`));
+  }
+  const ld=lastDay(curYM);
+  $('#mTable').innerHTML=`<thead><tr><th>Pot</th><th>15th<span class="rng"> cut-off</span><br><small>1–15</small></th><th>30th<span class="rng"> cut-off</span><br><small>16–${ld}</small></th><th>Month</th></tr></thead><tbody>${rows.join('')||'<tr><td colspan="4" class="empty">No goals yet. Add one below.</td></tr>'}</tbody><tfoot><tr><td>Total saved</td><td>${peso(t15)}</td><td>${peso(t30)}</td><td>${peso(t15+t30)}</td></tr></tfoot>`;
+}
+const cell=n=>n?`<span class="${n<0?'neg':''}">${peso(n)}</span>`:'<span class="zero">–</span>';
+function year(){
+  $('#yTitle').textContent=curY+' by payday cut-off';
+  const ms=[...Array(12)].map((_,i)=>{const ym=`${curY}-${pad(i+1)}`;return {ym,a:sum(inMonth(ym,'15')),b:sum(inMonth(ym,'30'))}});
+  const max=Math.max(1,...ms.map(m=>Math.max(0,m.a)+Math.max(0,m.b)));
+  $('#year').innerHTML=ms.map(m=>`<button class="yrow${m.ym===curYM?' on':''}" data-act="pick" data-ym="${m.ym}" aria-label="${mName(m.ym)}: ${peso(m.a+m.b)}"><span>${mName(m.ym,{month:'short'})}</span><span class="bar"><i class="b15" style="width:${Math.max(0,m.a)/max*100}%" title="15th: ${peso(m.a)}"></i><i class="b30" style="width:${Math.max(0,m.b)/max*100}%" title="30th: ${peso(m.b)}"></i></span><span class="num ${m.a+m.b?'':'zero'}">${m.a+m.b?peso(m.a+m.b):'–'}</span></button>`).join('')
+  +`<div class="yrow" style="cursor:default"><b>Year</b><span class="note">15th: ${peso(sum(ms.map(m=>({amt:m.a}))))} · 30th: ${peso(sum(ms.map(m=>({amt:m.b}))))}</span><span class="num">${peso(sum(ms.map(m=>({amt:m.a+m.b}))))}</span></div>`;
+}
+function editForm(g){
+  const kOpts=['Phone','iPad','MacBook'].map(k=>`<option${g.kind===k?' selected':''}>${k}</option>`).join('');
+  const cOpts=Object.entries(CATS).map(([k,c])=>`<option value="${k}"${g.cat===k?' selected':''}>${c.l}</option>`).join('');
+  return `<form class="goal gedit" data-id="${g.id}"><b>Edit goal</b>
+    <label for="eN-${g.id}">Name</label><input id="eN-${g.id}" name="name" required value="${esc(g.name)}">
+    <div class="row"><div><label for="eC-${g.id}">Category</label><select id="eC-${g.id}" name="cat">${cOpts}</select></div>
+    <div class="ekind"${g.cat==='gadget'?'':' hidden'}><label for="eK-${g.id}">Device</label><select id="eK-${g.id}" name="kind">${kOpts}</select></div></div>
+    <label for="eT-${g.id}">Target (₱)</label><input id="eT-${g.id}" name="target" type="number" inputmode="decimal" min="0" step="0.01" value="${g.target||''}" placeholder="No target">
+    <div class="row" style="margin-top:14px"><button class="btn sm" type="submit">Save</button><button class="btn ghost sm" type="button" data-act="canceledit">Cancel</button></div></form>`;
+}
+function goals(){
+  $('#goals').innerHTML=Object.entries(CATS).map(([k,c])=>{const gs=S.goals.filter(g=>g.cat===k);
+    return `<div class="gcol" id="col-${k}"><h3><span class="dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c.c}"></span>${c.l}<span class="note" style="font-weight:400">by ${c.sub.toLowerCase()}</span></h3>${gs.map(g=>{if(g.id===editId)return editForm(g);const s=byGoal(g.id),p=g.target?Math.min(100,Math.max(0,s/g.target*100)):0;
+      return `<div class="goal"><div class="gh"><b>${esc(g.name)}${g.kind?`<span class="tag">${g.kind}</span>`:''}</b><span class="num">${peso(s)}</span></div>${g.target?`<div class="meter"><i style="width:${p}%;background:${c.c}"></i></div><small>${Math.floor(p)}% of ${peso(g.target)} · ${s>=g.target?'goal reached':peso(g.target-s)+' to go'}</small>`:'<small>No target set</small>'}
+      <div style="display:flex;justify-content:flex-end;gap:4px"><button class="x" data-act="editgoal" data-id="${g.id}">Edit</button><button class="x" data-act="delgoal" data-id="${g.id}">Remove goal</button></div></div>`}).join('')||'<p class="empty">No pots yet.</p>'}</div>`}).join('');
+}
+function history(){
+  const f=$('#hFilter').value;
+  const es=S.entries.filter(e=>!f||goal(e.goal)?.cat===f).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)).slice(0,60);
+  $('#hist').innerHTML=es.map(e=>{const g=goal(e.goal);return `<li><span class="note">${new Date(e.date+'T00:00').toLocaleDateString('en',{month:'short',day:'numeric',year:'2-digit'})}<small>${e.cut}th cut-off</small></span><span>${esc(g?g.name:'Removed pot')}<small>${g?CATS[g.cat].l:''}${e.note?' · '+esc(e.note):''}</small></span><span class="num ${e.amt<0?'neg':''}">${peso(e.amt)}</span><button class="x" data-act="delent" data-id="${e.id}" aria-label="Delete entry">✕</button></li>`}).join('')||'<li class="empty" style="display:block">Nothing logged yet.</li>';
+}
+function all(){
+  hero();goalOpts();month();year();goals();history();
+  const hasS=S.goals.some(g=>g.s)||S.entries.some(e=>e.s);
+  $('#sampleNote').innerHTML=hasS?'The pots and deposits marked as samples are example data. <button class="btn ghost sm" data-act="clearSample">Clear sample data</button>':'';
+}
+function save(){
+  S.v=(S.v||0)+1;
+  try{localStorage.setItem('svpb',JSON.stringify(S))}catch(e){$('#saveState').textContent='Could not save on this phone — download a backup.'}
+  all();
+}
+function restore(txt){
+  const n=JSON.parse(txt);if(!Array.isArray(n.goals)||!Array.isArray(n.entries))throw 0;
+  n.v=Math.max(n.v||0,S.v||0);S=n;save();
+}
+const showMsg=(id,t)=>{$(id).textContent=t;setTimeout(()=>{if($(id).textContent===t)$(id).textContent=''},3500)};
+
+$('#dDate').value=TODAY;$('#dCut').value=cutOf(TODAY);
+$('#dDate').addEventListener('change',e=>{if(e.target.value)$('#dCut').value=cutOf(e.target.value)});
+$('#dep').addEventListener('submit',e=>{e.preventDefault();
+  const g=$('#dGoal').value,a=parseFloat($('#dAmt').value),sign=+document.querySelector('[name=typ]:checked').value;
+  if(!g||!(a>0))return showMsg('#dMsg','Pick a pot and enter an amount.');
+  const d=$('#dDate').value||TODAY;
+  S.entries.push({id:'e'+uid(),goal:g,amt:Math.round(a*sign*100)/100,date:d,cut:$('#dCut').value,note:$('#dNote').value.trim()||undefined});
+  $('#dAmt').value='';$('#dNote').value='';curYM=d.slice(0,7);curY=+d.slice(0,4);
+  save();showMsg('#dMsg',`${sign>0?'Added':'Withdrew'} ${peso(a)} · ${esc(goal(g).name)}, ${$('#dCut').value}th cut-off`);
+});
+const gCat=$('#gCat');
+const syncG=()=>{const c=CATS[gCat.value];$('#gNameL').textContent=c.sub;$('#gName').placeholder=c.ph;$('#gKindW').hidden=gCat.value!=='gadget'};
+gCat.addEventListener('change',syncG);syncG();
+$('#gForm').addEventListener('submit',e=>{e.preventDefault();
+  const n=$('#gName').value.trim();if(!n)return;
+  const g={id:'g'+uid(),cat:gCat.value,name:n,target:parseFloat($('#gTarget').value)||0};
+  if(g.cat==='gadget')g.kind=$('#gKind').value;
+  S.goals.push(g);$('#gName').value='';$('#gTarget').value='';save();
+});
+$('#hFilter').addEventListener('change',history);
+$('#goals').addEventListener('change',e=>{if(e.target.name==='cat'){const f=e.target.closest('form');f.querySelector('.ekind').hidden=e.target.value!=='gadget'}});
+$('#goals').addEventListener('submit',e=>{e.preventDefault();const f=e.target,g=goal(f.dataset.id);if(!g)return;
+  const E=f.elements,n=E['name'].value.trim();if(!n)return;
+  g.name=n;g.cat=E['cat'].value;g.target=parseFloat(E['target'].value)||0;
+  if(g.cat==='gadget')g.kind=E['kind'].value;else delete g.kind;
+  delete g.s;editId=null;save();
+  const card=document.getElementById('col-'+g.cat);card&&card.scrollIntoView({behavior:'smooth',block:'nearest'});
+});
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(a==='mprev'||a==='mnext'){curYM=shiftYM(curYM,a==='mprev'?-1:1);curY=+curYM.slice(0,4);month();year()}
+  else if(a==='yprev'||a==='ynext'){curY+=a==='yprev'?-1:1;year()}
+  else if(a==='pick'){curYM=b.dataset.ym;month();year();$('#mTitle').scrollIntoView({behavior:'smooth',block:'start'})}
+  else if(a==='goto'){$('#col-'+b.dataset.cat).scrollIntoView({behavior:'smooth',block:'start'})}
+  else if(a==='editgoal'){editId=b.dataset.id;goals();const f=document.querySelector('.gedit input');f&&f.focus()}
+  else if(a==='canceledit'){editId=null;goals()}
+  else if(a==='delent'||a==='delgoal'){
+    if(!b.hasAttribute('data-arm')){b.setAttribute('data-arm','');b.textContent=a==='delgoal'?'Tap again — removes its entries too':'Delete?';setTimeout(()=>{b.removeAttribute('data-arm');b.textContent=a==='delgoal'?'Remove goal':'✕'},3000);return}
+    if(a==='delent')S.entries=S.entries.filter(x=>x.id!==b.dataset.id);
+    else{S.goals=S.goals.filter(x=>x.id!==b.dataset.id);S.entries=S.entries.filter(x=>x.goal!==b.dataset.id)}
+    save();
+  }
+  else if(a==='clearSample'){S.goals=S.goals.filter(g=>!g.s);S.entries=S.entries.filter(x=>!x.s&&goal(x.goal));save()}
+  else if(a==='copy'){try{await navigator.clipboard.writeText(JSON.stringify(S));showMsg('#bMsg','Backup copied.')}catch(err){$('#imp').value=JSON.stringify(S);showMsg('#bMsg','Copy blocked — the backup is in the box above; select and copy it.')}}
+  else if(a==='import'){try{restore($('#imp').value);$('#imp').value='';showMsg('#bMsg','Backup restored.')}catch(err){showMsg('#bMsg','That does not look like a passbook backup.')}}
+  else if(a==='download'){const u=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));const l=document.createElement('a');l.href=u;l.download=`savings-backup-${TODAY}.json`;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);showMsg('#bMsg','Backup saved to your Downloads.')}
+});
+$('#impFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{restore(await f.text());showMsg('#bMsg','Backup restored.')}catch(err){showMsg('#bMsg','That file is not a passbook backup.')}e.target.value=''});
+all();
+try{if(!localStorage.getItem('svpb'))localStorage.setItem('svpb',JSON.stringify(S))}catch(e){}
+try{navigator.storage?.persist?.()}catch(e){}
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>

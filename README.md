@@ -1,6 +1,8 @@
 # Savings Passbook
 
-A simple savings tracker for your phone. It keeps your **Personal**, **Travel**, and **Gadget** savings separate and tracks how much you save every **payday cut-off** (15th and 30th).
+A simple savings tracker for your phone. It keeps your **Personal**, **Travel**, and **Gadget** savings separate, tracks how much you save every **payday cut-off** (15th and 30th), and keeps an eye on your **credit card** balances.
+
+**Current version:** 1.1.0 – see [CHANGELOG.md](CHANGELOG.md) for what's new.
 
 It works **offline** once installed, and all your data stays on your phone.
 
@@ -17,6 +19,7 @@ It works **offline** once installed, and all your data stays on your phone.
 - **Year view** – bar chart of every month, split by cut-off
 - **Goals with progress bars** – set a target and see how much is left
 - **Edit goals** – change the name, target, category, or device anytime
+- **Credit cards** – see the balance to pay and available credit for each card, log payments and purchases, and get a due-date reminder
 - **Withdrawals** – log money you took out
 - **History** – see and delete past entries
 - **Backup and restore** – save your data to a file and load it back
@@ -67,6 +70,21 @@ In **Log a payday deposit**:
 ### 5. Edit a goal
 Tap **Edit** on a goal card to change its name, target, category, or device, then tap **Save**. Your deposits stay with the goal.
 
+### 6. Track your credit cards
+1. Go to **Credit cards → Add a credit card**.
+2. Enter a **nickname** (e.g. BPI Amore Visa), the **credit limit**, the **balance to pay now**, and the **due day** (optional).
+   > Use a nickname only. Never type your card number.
+3. Use **Log card activity** to record:
+   - **Payment** – money you paid to the card (lowers the balance to pay)
+   - **Purchase** – something you charged to the card (raises the balance to pay)
+4. Each card shows:
+   - **To pay** = starting balance + purchases − payments
+   - **Available** = credit limit − balance to pay
+   - How much of your limit is used, and when the next payment is due
+5. When your new statement arrives, tap **Edit** on the card and type the statement balance in **Balance to pay** to match it.
+
+Card payments also show in the monthly table (by 15th / 30th cut-off) and in **History**. Credit cards are **not** counted in your total savings.
+
 ---
 
 ## Back up your data (important)
@@ -87,17 +105,28 @@ Your data is saved **only on your phone**. Clearing Chrome's data or uninstallin
 | `manifest.webmanifest` | App name, colours, and icon for installing |
 | `icon-192.png`, `icon-512.png` | App icons |
 | `README.md` | This guide |
+| `CHANGELOG.md` | List of changes in each version |
 
 ---
 
+## Versioning
+
+The app uses **MAJOR.MINOR.PATCH** version numbers (e.g. `1.1.0`):
+- **MINOR** goes up for new features (1.0.0 → 1.1.0)
+- **PATCH** goes up for bug fixes (1.1.0 → 1.1.1)
+
+The current version is shown at the bottom of the app. Tap **What's new** to see the changes.
+
 ## Updating the app
 
-1. Upload the new files to the repo (**Add file → Upload files → Commit changes**).
-2. If you changed any file, also change the version in `sw.js`:
-   ```js
-   const VERSION = 'savings-v2'; // bump to savings-v3, v4, ...
-   ```
-3. Wait 1–2 minutes for GitHub Pages to update.
-4. Open the app once while online, close it fully, then reopen it.
+When you release a new version:
+1. Change the version number in **both** files so they match:
+   - `index.html` → `const APP_VERSION='1.1.0';` (and add the new version at the top of `CHANGES`)
+   - `sw.js` → `const VERSION = 'savings-v1.1.0';`
+2. Add the changes to `CHANGELOG.md`.
+3. Upload the changed files to the repo (**Add file → Upload files → Commit changes**). Use a commit message like `v1.1.0: add credit cards`.
+4. Optional: create a release in GitHub (**Releases → Draft a new release**, tag `v1.1.0`).
+5. Wait 1–2 minutes for GitHub Pages to update.
+6. Open the app once while online, close it fully, then reopen it. You'll see the **What's new** note.
 
 Updating the files does **not** erase your saved goals and deposits.
